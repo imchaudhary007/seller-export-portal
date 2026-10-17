@@ -65,13 +65,15 @@ scrolls in a single main pane.
 
 The seeded seller includes two in-transit shipments, two closed shipments with
 payment marked paid, and a separate sample Seller Central order ready to create.
-All records are mock data for interviewer walkthroughs. See
-the workflow PDFs for visual mocks:
+All records are mock data for interviewer walkthroughs. See the numbered,
+wide-screen workflow mocks; each screen highlights the next action:
 
-- [`New shipment creation workflow`](docs/new-shipment-creation-workflow.pdf)
-- [`Shipment information and tracking workflow`](docs/shipment-information-and-tracking-workflow.pdf)
-- [`Help centre and seller support workflow`](docs/help-centre-and-seller-support-workflow.pdf)
-- [`All workflows (combined)`](docs/shipment-user-journey.pdf)
+- [`New shipment creation workflow`](docs/new-shipment-creation-workflow-v2.pdf)
+- [`Shipment information workflow`](docs/shipment-information-workflow.pdf)
+- [`Shipment tracking workflow`](docs/shipment-tracking-workflow.pdf)
+- [`Help centre and seller support workflow`](docs/help-centre-and-seller-support-workflow-v2.pdf)
+- [Animated new-shipment walkthrough](docs/new-shipment-creation-workflow-v2.gif)
+- [`All workflows, in sequence`](docs/shipment-user-journey-v2.pdf)
 
 ## Publish on GitHub and Streamlit Community Cloud
 

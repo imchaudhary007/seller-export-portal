@@ -11,7 +11,7 @@ from portal import (
 st.set_page_config(
     page_title="AMAZON EXPORT",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 st.html(

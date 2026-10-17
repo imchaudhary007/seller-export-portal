@@ -443,12 +443,41 @@ with new_shipment_tab:
             else:
                 step = st.session_state.shipment_flow_step
                 version = st.session_state.shipment_form_version
-                st.progress(step / 4, text=f"Step {step} of 4 · " + [
-                    "Import items",
-                    "Pickup and destination",
-                    "Shipment details",
-                    "Review and create",
-                ][step - 1])
+                draft_id = st.session_state.get("active_shipment_draft_id")
+                scroll_signature = (
+                    draft_id,
+                    step,
+                )
+                if (
+                    st.session_state.get("_shipment_flow_scroll_signature")
+                    != scroll_signature
+                ):
+                    scroll_token = (
+                        st.session_state.get("_shipment_flow_scroll_token", 0) + 1
+                    )
+                    st.session_state._shipment_flow_scroll_token = scroll_token
+                    st.html(
+                        f"""
+                        <script data-scroll-token="{scroll_token}">
+                        (() => {{
+                            const scrollMainToTop = () => {{
+                                const main = document.querySelector("#stMain");
+                                if (main) main.scrollTop = 0;
+                                window.scrollTo(0, 0);
+                            }};
+                            scrollMainToTop();
+                            requestAnimationFrame(() =>
+                                requestAnimationFrame(scrollMainToTop)
+                            );
+                        }})();
+                        </script>
+                        """,
+                        unsafe_allow_javascript=True,
+                    )
+                    st.session_state._shipment_flow_scroll_signature = scroll_signature
+
+                st.progress(step / 4)
+                st.markdown(f"### Step {step}/4")
 
                 if step == 1:
                     st.markdown("#### 1 · Import items from Seller Central")
