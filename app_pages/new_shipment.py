@@ -104,29 +104,32 @@ def _start_shipment_flow():
     }
     st.session_state.shipment_success_message = ""
     st.session_state.last_created_shipment_id = None
-    save_shipment_draft(
-        {
-            "draft_id": draft_id,
-            "seller_id": seller_id,
-            "seller_reference": seller_reference,
-            "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "flow_step": 1,
-            "progress_percent": 0,
-            "items": [],
-            "form_state": {
-                "form_version": version,
-                "flow_step": 1,
-                "selected_items": st.session_state.shipment_selected_items,
-                "working_data": {},
-                "widget_values": {},
-            },
-        }
-    )
+
+
+def _restore_missing_widget_values(seller_id):
+    active_draft_id = st.session_state.get("active_shipment_draft_id")
+    if not active_draft_id:
+        return
+    saved = load_shipment_draft(active_draft_id, seller_id)
+    if not saved:
+        return
+    form_state = saved.get("form_state", {})
+    version = st.session_state.shipment_form_version
+    if int(form_state.get("form_version", -1)) != version:
+        return
+    for key, value in form_state.get("widget_values", {}).items():
+        if key not in st.session_state:
+            st.session_state[key] = _decode_draft_value(value)
 
 
 def _save_active_draft_snapshot(seller, draft):
     active_draft_id = st.session_state.get("active_shipment_draft_id")
     if not active_draft_id:
+        return
+
+    existing = load_shipment_draft(active_draft_id, seller["seller_id"])
+    # A new shipment becomes pending only once the seller reaches step 2.
+    if existing is None and int(st.session_state.shipment_flow_step) < 2:
         return
 
     version = st.session_state.shipment_form_version
@@ -137,6 +140,14 @@ def _save_active_draft_snapshot(seller, draft):
         if key.startswith(widget_prefix)
         and not key.endswith("_compliance_documents")
     }
+    if existing:
+        saved_form = existing.get("form_state", {})
+        if int(saved_form.get("form_version", -1)) == version:
+            # Streamlit drops widgets from other steps; keep their saved values.
+            widget_values = {
+                **saved_form.get("widget_values", {}),
+                **_encode_draft_value(widget_values),
+            }
     selected_items = dict(st.session_state.get("shipment_selected_items", {}))
     for product in st.session_state.catalog:
         quantity_key = f"{widget_prefix}qty_{product['sku']}"
@@ -328,6 +339,17 @@ st.session_state.setdefault("shipment_form_version", 0)
 st.session_state.setdefault("shipment_flow_active", False)
 st.session_state.setdefault("delete_confirm_draft_id", None)
 
+current_tab = st.session_state.get("export_shipment_tabs")
+previous_tab = st.session_state.get("_last_export_shipment_tab")
+if previous_tab == "New Shipment" and current_tab != "New Shipment":
+    # Leaving the tab saves progress, then returns it to its default view.
+    _restore_missing_widget_values(seller["seller_id"])
+    _save_active_draft_snapshot(seller, draft)
+    st.session_state.shipment_flow_active = False
+    st.session_state.active_shipment_draft_id = None
+    st.session_state.loaded_shipment_draft_id = None
+st.session_state._last_export_shipment_tab = current_tab
+
 active_draft_id = st.session_state.get("active_shipment_draft_id")
 if active_draft_id and (
     st.session_state.get("loaded_shipment_draft_id") != active_draft_id
@@ -349,8 +371,17 @@ if active_draft_id and (
         st.session_state.shipment_working_data = form_state.get(
             "working_data", {}
         )
-        for key, value in form_state.get("widget_values", {}).items():
+        saved_widgets = form_state.get("widget_values", {})
+        for key, value in saved_widgets.items():
             st.session_state[key] = _decode_draft_value(value)
+        # Keep the saved quantities instead of re-applying the sample order.
+        st.session_state.sample_order_applied_version = version
+        st.session_state.sample_order_applied_value = bool(
+            saved_widgets.get(f"wizard_{version}_use_sample_order", True)
+        )
+        st.session_state.use_sample_seller_order = (
+            st.session_state.sample_order_applied_value
+        )
         st.session_state.shipment_flow_active = True
         st.session_state.export_shipment_tabs = "New Shipment"
         st.session_state.loaded_shipment_draft_id = active_draft_id
@@ -364,6 +395,7 @@ draft = {
     "seller_reference": st.session_state.current_seller_reference,
 }
 
+_restore_missing_widget_values(seller["seller_id"])
 _save_active_draft_snapshot(seller, draft)
 
 saved_drafts = load_shipment_drafts(seller["seller_id"])
@@ -404,6 +436,7 @@ new_shipment_tab, wip_tab, scheduled_tab, transit_tab, closed_tab = st.tabs(
     ],
     key="export_shipment_tabs",
     default="New Shipment",
+    on_change="rerun",
 )
 
 with new_shipment_tab:

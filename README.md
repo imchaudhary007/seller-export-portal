@@ -47,8 +47,10 @@ scrolls in a single main pane.
    Seller Central order and proceed through four steps: select items, enter
    pickup and destination details, add product compliance documents and
    shipment/package details, then review and create. A successful booking
-   opens its shipment information directly. Incomplete work is autosaved.
-   Pickup must be at least 36 hours ahead in India time.
+   opens its shipment information directly. A shipment is saved to **Pending
+      Completion** only once you reach step 2; **Resume** reopens it at the last
+      saved step with your entries, and it stays pending until created.
+      Pickup must be at least 36 hours ahead in India time.
 3. Open **Shipment information**. The shipment ID/consignee/reference search,
    destination warehouse dropdown, and status buttons sit in three columns
    inside one filter box. The table includes seller reference and shipment
